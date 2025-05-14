@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vehicle Job Card</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    form {
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+    }
+    #print-area {
+      display: none;
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Vehicle Job Card</h1>
+
+  <form id="jobForm">
+    <label>Job Number: <input type="text" id="jobNumber" required /></label>
+    <label>Job Date: <input type="date" id="jobDate" required /></label>
+    <label>Vehicle Number: <input type="text" id="vehicleNumber" required /></label>
+    <label>Date In: <input type="date" id="dateIn" required /></label>
+    <label>Time In: <input type="time" id="timeIn" required /></label>
+    <label>Company: <input type="text" id="company" /></label>
+    <label>Model: <input type="text" id="model" /></label>
+    <label>Customer Name: <input type="text" id="customerName" /></label>
+    <label>Customer No.: <input type="text" id="customerNo" /></label>
+    <label>Fuel Level: <input type="text" id="fuelLevel" /></label>
+
+    <div id="serviceFields">
+      <label>Service 1: <input type="text" id="SR1" /></label>
+    </div>
+    <button type="button" id="addServiceField">+ Add Service</button>
+
+    <label>Note: <textarea id="note"></textarea></label>
+    <label>Estimate Cost: <input type="text" id="estimateCost" /></label>
+    <label>Estimate Time: <input type="text" id="estimateTime" /></label>
+
+    <button type="submit" id="submitBtn">Submit</button>
+    <button type="button" id="previewBtn">Preview & Print</button>
+  </form>
+
+  <div id="print-area">
+    <h2>Job Sheet Preview</h2>
+    <div id="job-details"></div>
+    <button onclick="window.print()">Print</button>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwjdlTcODhVoDOlhSzLyDWOhtjH-F_F2WLWM3j9_EMnbOofAvVg68cy6tW86XqgQfGs/exec'; // Replace with your Web App URL
+    let serviceFieldCount = 1;
+    const maxServiceFields = 13;
+
+    // Submit Form Data to Google Apps Script
+    document.getElementById('submitBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+
+      const formData = {
+        jobNumber: document.getElementById('jobNumber').value,
+        jobDate: document.getElementById('jobDate').value,
+        vehicleNumber: document.getElementById('vehicleNumber').value,
+        dateIn: document.getElementById('dateIn').value,
+        timeIn: document.getElementById('timeIn').value,
+        company: document.getElementById('company').value,
+        model: document.getElementById('model').value,
+        customerName: document.getElementById('customerName').value,
+        customerNo: document.getElementById('customerNo').value,
+        fuelLevel: document.getElementById('fuelLevel').value,
+        note: document.getElementById('note').value,
+        estimateCost: document.getElementById('estimateCost').value,
+        estimateTime: document.getElementById('estimateTime').value
+      };
+
+      for (let i = 1; i <= maxServiceFields; i++) {
+        const field = document.getElementById(`SR${i}`);
+        formData[`SR${i}`] = field ? field.value : '';
+      }
+
+      fetch(scriptURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.result === 'success') {
+          alert("Form submitted successfully!");
+          document.getElementById("jobForm").reset();
+          serviceFieldCount = 1;
+          document.getElementById('addServiceField').style.display = 'block';
+          resetServiceFields();
+        } else {
+          alert("Error: " + result.message);
+        }
+      })
+      .catch(error => {
+        alert("Error: " + error.message);
+      });
+    });
+
+    // Preview & Print Form Data
+    document.getElementById('previewBtn').addEventListener('click', function() {
+      const formData = {
+        jobNumber: document.getElementById('jobNumber').value,
+        jobDate: document.getElementById('jobDate').value,
+        vehicleNumber: document.getElementById('vehicleNumber').value,
+        dateIn: document.getElementById('dateIn').value,
+        timeIn: document.getElementById('timeIn').value,
+        company: document.getElementById('company').value,
+        model: document.getElementById('model').value,
+        customerName: document.getElementById('customerName').value,
+        customerNo: document.getElementById('customerNo').value,
+        fuelLevel: document.getElementById('fuelLevel').value,
+        note: document.getElementById('note').value,
+        estimateCost: document.getElementById('estimateCost').value,
+        estimateTime: document.getElementById('estimateTime').value
+      };
+
+      for (let i = 1; i <= maxServiceFields; i++) {
+        const field = document.getElementById(`SR${i}`);
+        formData[`SR${i}`] = field ? field.value : '';
+      }
+
+      printPreview(formData);
+    });
+
+    function printPreview(data) {
+      let previewHTML = '';
+      for (const [key, value] of Object.entries(data)) {
+        previewHTML += `<p><strong>${key}:</strong> ${value}</p>`;
+      }
+      document.getElementById("job-details").innerHTML = previewHTML;
+      document.getElementById("print-area").style.display = 'block';
+    }
+
+    // Add More Service Fields
+    document.getElementById('addServiceField').addEventListener('click', function() {
+      if (serviceFieldCount < maxServiceFields) {
+        serviceFieldCount++;
+        const newField = document.createElement('label');
+        newField.innerHTML = `Service ${serviceFieldCount}: <input type="text" id="SR${serviceFieldCount}" />`;
+        document.getElementById('serviceFields').appendChild(newField);
+
+        if (serviceFieldCount === maxServiceFields) {
+          document.getElementById('addServiceField').style.display = 'none';
+        }
+      }
+    });
+
+    // Reset Service Fields
+    function resetServiceFields() {
+      const container = document.getElementById('serviceFields');
+      container.innerHTML = '<label>Service 1: <input type="text" id="SR1" /></label>';
+    }
+  </script>
+</body>
+</html>
